@@ -4,9 +4,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,6 +28,7 @@ public class SecondActivity extends AppCompatActivity {
     // создание полей
     private RecyclerView recyclerView; // поле для списка RecyclerView
     private FloatingActionButton fabAdd; // поле для кнопки добавить новую заметку
+    private FloatingActionButton drop;
 
     private List<Notebook> notesList; // поле для контейнера списка заметок
 
@@ -40,6 +44,9 @@ public class SecondActivity extends AppCompatActivity {
         // присваивание id полям
         recyclerView = findViewById(R.id.recycler_list);
         fabAdd = findViewById(R.id.fabAdd);
+        drop = findViewById(R.id.drop);
+        fabAdd.setOnClickListener(listener);
+        drop.setOnClickListener(listener);
 
         notesList = new ArrayList<>(); // выделение памяти и задание типа контейнера для списка заметок
         database = new DatabaseHelper(this); // выделение памяти и задание текущего контекста работы с БД
@@ -50,16 +57,42 @@ public class SecondActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this)); // задание структуры вывода данных в recyclerView
         adapter = new Adapter(this, SecondActivity.this, notesList); // инициализация адаптера и передача в рего данных из БД
         recyclerView.setAdapter(adapter); // передача в recyclerView адаптер
-
-        // обработка нажатия кнопки создания новой заметки
-        fabAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // переключение на новую активность
-                startActivity(new Intent(SecondActivity.this, AddNotesActivity.class));
-            }
-        });
     }
+
+
+    private View.OnClickListener listener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            switch (view.getId()) {
+                case R.id.fabAdd : // обработка нажатия кнопки создания новой заметки
+                    // переключение на новую активность
+                    startActivity(new Intent(SecondActivity.this, AddNotesActivity.class));
+                    break;
+
+                case R.id.drop :
+                    new AlertDialog.Builder(SecondActivity.this)
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .setTitle("Очистка всего")
+                            .setMessage("Уверены, что хотите очистить?")
+                            .setPositiveButton("Да", new DialogInterface.OnClickListener()
+                            {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    //DatabaseHelper database = new DatabaseHelper(SecondActivity.this);
+                                    database.deleteAllNotes();
+                                    notesList.clear();
+                                    adapter.notifyDataSetChanged();
+                                    Toast.makeText(SecondActivity.this, "Заметки очищены", Toast.LENGTH_SHORT).show();
+                                    //startActivity(new Intent(SecondActivity.this, AddNotesActivity.class));
+                                }
+                            })
+                            .setNegativeButton("Нет", null)
+                            .show();
+                    break;
+            }
+        }
+    };
+
 
     // метод считывания из БД всех записей
     public void fetchAllNotes(){
